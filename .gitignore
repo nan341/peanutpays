@@ -48,3 +48,6 @@ budgetmitra.db.bak
 
 # drizzle migrations output
 /drizzle
+
+*.zip
+
