@@ -123,6 +123,19 @@ export async function ensureSchema(targetDb: AppDb = db) {
   await targetDb.run(sql`CREATE INDEX IF NOT EXISTS idx_shared_entries_group ON shared_entries(group_id)`);
   await targetDb.run(sql`CREATE INDEX IF NOT EXISTS idx_shared_entries_lender ON shared_entries(lender_id)`);
   await targetDb.run(sql`CREATE INDEX IF NOT EXISTS idx_shared_entries_borrower ON shared_entries(borrower_id)`);
+
+  // Budget Limits
+  await targetDb.run(sql`
+    CREATE TABLE IF NOT EXISTS budget_limits (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id),
+      category TEXT NOT NULL,
+      monthly_limit REAL NOT NULL,
+      updated_at TEXT NOT NULL DEFAULT (current_timestamp)
+    )
+  `);
+  await targetDb.run(sql`CREATE INDEX IF NOT EXISTS idx_budget_limits_user ON budget_limits(user_id)`);
+  await targetDb.run(sql`CREATE INDEX IF NOT EXISTS idx_budget_limits_user_cat ON budget_limits(user_id, category)`);
 }
 
 let initialized = false;

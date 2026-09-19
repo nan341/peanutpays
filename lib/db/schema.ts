@@ -1,4 +1,4 @@
-﻿import { sqliteTable, text, integer, real, primaryKey } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, primaryKey } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 export const users = sqliteTable('users', {
@@ -84,3 +84,12 @@ export const sharedEntries = sqliteTable('shared_entries', {
   createdBy: text('created_by').notNull().references(() => users.id),
   createdAt: text('created_at').notNull().default(sql`(current_timestamp)`),
 });
+
+export const budgetLimits = sqliteTable('budget_limits', {
+  id: text('id').primaryKey(),
+  userId: text('user_id').notNull().references(() => users.id),
+  category: text('category').notNull(),
+  monthlyLimit: real('monthly_limit').notNull(),
+  updatedAt: text('updated_at').notNull().default(sql`(current_timestamp)`),
+});
+
