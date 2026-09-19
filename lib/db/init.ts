@@ -1,4 +1,4 @@
-﻿import { db, AppDb } from './client';
+import { db, AppDb } from './client';
 import { sql } from 'drizzle-orm';
 
 export async function ensureSchema(targetDb: AppDb = db) {
@@ -39,6 +39,7 @@ export async function ensureSchema(targetDb: AppDb = db) {
     )
   `);
   await targetDb.run(sql`CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id)`);
+  await targetDb.run(sql`CREATE INDEX IF NOT EXISTS idx_transactions_user_date ON transactions(user_id, date)`);
 
   // Friends
   await targetDb.run(sql`

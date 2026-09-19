@@ -21,6 +21,7 @@
   "transactions.type.expense": "Expense",
   "transactions.category": "Category",
   "transactions.date": "Date",
+  "transactions.dateFutureError": "Transaction date cannot be in the future.",
   "transactions.submit": "Save",
   "transactions.cancel": "Cancel",
   "transactions.empty": "No transactions recorded yet.",

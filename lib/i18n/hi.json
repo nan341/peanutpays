@@ -21,6 +21,7 @@
   "transactions.type.expense": "खर्च",
   "transactions.category": "श्रेणी",
   "transactions.date": "तारीख",
+  "transactions.dateFutureError": "लेन-देन की तारीख भविष्य की नहीं हो सकती।",
   "transactions.submit": "सहेजें",
   "transactions.cancel": "रद्द करें",
   "transactions.empty": "अभी तक कोई लेन-देन दर्ज नहीं।",
