@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Terms and Conditions - BudgetMitra",
-  description: "Terms governing the use of BudgetMitra.",
+  title: 'Terms and Conditions - BudgetMitra',
+  description: 'Terms governing the use of BudgetMitra.',
 };
 
 export default function TermsPage() {
@@ -13,49 +13,31 @@ export default function TermsPage() {
         <p className="text-sm text-gray-400 mb-6">Last updated: September 19, 2026</p>
 
         <p className="text-sm text-gray-700 mb-6">
-          By using BudgetMitra, you agree to the following terms.
+          By creating an account and using BudgetMitra, you agree to the following terms.
         </p>
 
         <Section number="1" title="What BudgetMitra is">
-          BudgetMitra is a personal budgeting and expense-tracking tool. It helps you log
-          spending, understand your habits, and track money lent to or borrowed from friends.
+          BudgetMitra is a personal and shared expense tracking application. It helps individuals track personal spending and enables friends and groups to record shared debts and settle up.
         </Section>
 
         <Section number="2" title="Not financial advice">
-          Saving tips, spending insights, and any educational content in the app are for
-          informational purposes only. BudgetMitra does not provide investment advice, and nothing
-          in the app should be treated as a recommendation to buy, sell, or invest in any
-          financial product.
+          Saving tips, spending insights, and AI chat responses are for informational purposes only. BudgetMitra never provides investment advice, and nothing in the application should be treated as financial or investment recommendations.
         </Section>
 
-        <Section number="3" title="Accuracy of information">
-          You are responsible for the accuracy of the transaction and lending data you enter.
-          BudgetMitra reflects the data you provide and does not independently verify it.
+        <Section number="3" title="User accounts and responsibility">
+          You are responsible for safeguarding your login credentials and maintaining the accuracy of data you enter.
         </Section>
 
-        <Section number="4" title="Friend/lending tracker">
-          The lending tracker is a personal record-keeping tool between you and people you choose
-          to log. BudgetMitra is not a party to any loan, does not enforce repayment, and is not
-          responsible for disputes between users and their contacts.
+        <Section number="4" title="Shared debts and settlements">
+          The shared debt tracker and settlement plans are record-keeping aids for informal peer-to-peer tracking. BudgetMitra is not a payment gateway, bank, or party to any loan, does not enforce repayments, and is not responsible for disputes between users.
         </Section>
 
-        <Section number="5" title="Account and data">
-          You are responsible for keeping your device secure, since your data is stored locally.
-          If you clear your data, it is permanently deleted and cannot be recovered by us.
+        <Section number="5" title="Limitation of liability">
+          BudgetMitra is provided on an as-is basis without warranties of any kind. We are not liable for decisions made based on information or calculations in the app.
         </Section>
 
-        <Section number="6" title="Changes to the service">
-          Features may be added, changed, or removed as the app evolves, including during
-          hackathon development.
-        </Section>
-
-        <Section number="7" title="Limitation of liability">
-          BudgetMitra is provided as-is, without warranties of any kind. We are not liable for
-          financial decisions made based on information in the app.
-        </Section>
-
-        <Section number="8" title="Contact">
-          Questions about these terms can be directed to{" "}
+        <Section number="6" title="Contact">
+          Questions about these terms can be directed to{' '}
           <a
             href="mailto:nandini19mehra@gmail.com"
             className="text-teal-700 underline"

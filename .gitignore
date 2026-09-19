@@ -26,6 +26,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
 .env*.local
 
 # vercel
@@ -35,10 +36,15 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local database
+# local database and backups
+*.db
+*.db-*
+*.db.bak
+*.bak
 budgetmitra.db
 budgetmitra.db-wal
 budgetmitra.db-shm
+budgetmitra.db.bak
 
 # drizzle migrations output
 /drizzle

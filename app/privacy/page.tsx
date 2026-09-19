@@ -1,8 +1,8 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Privacy Policy - BudgetMitra",
-  description: "How BudgetMitra handles your financial data.",
+  title: 'Privacy Policy - BudgetMitra',
+  description: 'How BudgetMitra handles your account and financial data.',
 };
 
 export default function PrivacyPage() {
@@ -13,47 +13,31 @@ export default function PrivacyPage() {
         <p className="text-sm text-gray-400 mb-6">Last updated: September 19, 2026</p>
 
         <p className="text-sm text-gray-700 mb-6">
-          BudgetMitra is built with one core principle: your financial data belongs to you.
+          BudgetMitra is designed with clear and transparent data privacy controls for all users.
         </p>
 
-        <Section title="What we collect">
-          Transaction details you enter (amount, category, date, description), and
-          lending/borrowing entries you add for tracking money between friends.
+        <Section title="Account Information">
+          Your account stores your email, handle, display name and a hashed password. Password reset is not available yet.
         </Section>
 
-        <Section title="Where your data lives">
-          Your data is stored locally on your device by default. It is not uploaded to a remote
-          server unless a feature you explicitly enable requires it.
+        <Section title="Personal Financial Data">
+          Your personal transactions, categories, amounts, and personal lending notes are private to your account.
         </Section>
 
-        <Section title="How AI features work">
-          When you use saving tips or the chat feature, a summarized, anonymized version of your
-          spending pattern is sent to our AI provider to generate a response. We do not send your
-          name, friends&apos; names, or any other personal identifiers as part of this process.
+        <Section title="Shared Ledgers and Groups">
+          Shared ledgers you join, including names, amounts and notes inside them, are visible to the other members of that ledger and to the server.
         </Section>
 
-        <Section title="What we never do">
-          We do not sell your data. We do not share it with advertisers or third parties. We do
-          not use your data for anything beyond generating the insights you asked for.
+        <Section title="AI Features and Processing">
+          If you use optional AI categorization, only the description of that transaction is sent to our AI provider to suggest a category. When you use saving tips or chat, only amounts, categories, and dates are sent for context. Descriptions, friend names, handles, group names and notes are never sent to any LLM.
         </Section>
 
-        <Section title="Your control">
-          You can clear all stored data at any time using the &ldquo;Clear my data&rdquo; option
-          in the dashboard. Doing so is permanent and cannot be undone.
-        </Section>
-
-        <Section title="Bank/account integration (future feature)">
-          If bank integration is added in future, it will only work through India&apos;s
-          RBI-regulated Account Aggregator framework, requiring your explicit and revocable consent
-          before any data is shared.
-        </Section>
-
-        <Section title="Changes to this policy">
-          If this policy changes, we&apos;ll update the date above and note what changed.
+        <Section title="Data Deletion">
+          You can clear your personal data at any time using the &ldquo;Clear My Data&rdquo; button in the dashboard. This deletes your personal transactions, friends, and personal lending entries. It does not delete shared ledger entries or other users&apos; accounts.
         </Section>
 
         <Section title="Contact">
-          Questions about this policy can be directed to{" "}
+          Questions about this policy can be directed to{' '}
           <a
             href="mailto:nandini19mehra@gmail.com"
             className="text-teal-700 underline"
