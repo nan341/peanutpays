@@ -1,13 +1,19 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { rawClient } from '../lib/db/client';
-import { ensureTablesExist } from '../lib/db/init';
+import { createClient } from '@libsql/client';
+import { drizzle } from 'drizzle-orm/libsql';
+import * as schema from '../lib/db/schema';
+import { ensureSchema } from '../lib/db/init';
 
 describe('Auth & Middleware Diagnostics', () => {
+  let memDb: ReturnType<typeof drizzle>;
+  let memClient: ReturnType<typeof createClient>;
+
   beforeEach(async () => {
-    await ensureTablesExist();
-    await rawClient.execute({ sql: 'DELETE FROM users', args: [] });
+    memClient = createClient({ url: ':memory:' });
+    memDb = drizzle(memClient, { schema });
+    await ensureSchema(memDb as any);
   });
 
   describe('Middleware Matcher & Static Bypass Logic', () => {
@@ -63,14 +69,14 @@ describe('Auth & Middleware Diagnostics', () => {
       const hash = await bcrypt.hash(password, 10);
       const userId = crypto.randomUUID();
 
-      await rawClient.execute({
+      await memClient.execute({
         sql: 'INSERT INTO users (id, email, handle, display_name, password_hash) VALUES (?, ?, ?, ?, ?)',
         args: [userId, 'testuser@example.com', 'testuser', 'Test User', hash],
       });
 
       // Query case-insensitively
       const inputEmail = '  TESTUSER@example.COM  '.trim().toLowerCase();
-      const res = await rawClient.execute({
+      const res = await memClient.execute({
         sql: 'SELECT id, email, password_hash, display_name FROM users WHERE lower(email) = ?',
         args: [inputEmail],
       });
@@ -87,7 +93,7 @@ describe('Auth & Middleware Diagnostics', () => {
     });
 
     it('handles non-existent user safely without revealing existence', async () => {
-      const res = await rawClient.execute({
+      const res = await memClient.execute({
         sql: 'SELECT id, email, password_hash, display_name FROM users WHERE lower(email) = ?',
         args: ['nonexistent@example.com'],
       });

@@ -16,7 +16,10 @@ async function callGroq(messages: { role: string; content: string }[], jsonMode 
     }),
   });
 
-  if (!res.ok) throw new Error(`Groq API error: ${res.status}`);
+  if (!res.ok) {
+    const errorText = await res.text().catch(() => "");
+    throw new Error(`Groq API error: ${res.status} ${res.statusText} - ${errorText}`);
+  }
   const data = await res.json();
   return data.choices[0].message.content;
 }
