@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy - BudgetMitra',
@@ -26,6 +26,10 @@ export default function PrivacyPage() {
 
         <Section title="Shared Ledgers and Groups">
           Shared ledgers you join, including names, amounts and notes inside them, are visible to the other members of that ledger and to the server.
+        </Section>
+
+        <Section title="UPI and Payments">
+          If you add a UPI ID, it is shown only to a friend or group member who owes you money in a shared ledger, when they choose to pay you. BudgetMitra does not process payments or hold money. Payments happen in your UPI app, and the person receiving the money confirms them here.
         </Section>
 
         <Section title="AI Features and Processing">

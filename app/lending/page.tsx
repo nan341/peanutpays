@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useCallback, useEffect, useState } from 'react';
 import LendingLedger from '@/components/LendingLedger';
@@ -30,18 +30,41 @@ export default function LendingPage() {
   const [activeTab, setActiveTab] = useState<TabType>('personal');
   const [friends, setFriends] = useState<Friend[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchFriends = useCallback(async () => {
     setLoading(true);
+    setError(null);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     try {
-      const res = await fetch('/api/lending');
-      if (res.ok) {
-        setFriends(await res.json());
+      const res = await fetch('/api/lending', { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (res.status === 401) {
+        window.location.href = '/login';
+        return;
       }
+
+      if (!res.ok) {
+        setError(t('lending.error'));
+        return;
+      }
+
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setFriends(data);
+      } else {
+        setFriends([]);
+      }
+    } catch {
+      setError(t('lending.error'));
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (activeTab === 'personal') {
@@ -90,6 +113,16 @@ export default function LendingPage() {
               {[1, 2].map((i) => (
                 <div key={i} className="h-24 bg-gray-100 rounded-lg animate-pulse" />
               ))}
+            </div>
+          ) : error ? (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-md text-sm text-[#f4614d] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <span>{error}</span>
+              <button
+                onClick={fetchFriends}
+                className="px-3.5 py-1.5 bg-[#0f2044] hover:bg-[#1a365d] text-white text-xs font-medium rounded transition-colors shrink-0"
+              >
+                {t('lending.tryAgain')}
+              </button>
             </div>
           ) : (
             <LendingLedger friends={friends} onUpdate={fetchFriends} />

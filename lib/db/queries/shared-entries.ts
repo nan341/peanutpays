@@ -54,6 +54,7 @@ export async function getGroupDetails(userId: string, groupId: string, targetDb:
       status: sharedEntries.status,
       note: sharedEntries.note,
       batchId: sharedEntries.batchId,
+      upiRef: sharedEntries.upiRef,
       createdBy: sharedEntries.createdBy,
       createdAt: sharedEntries.createdAt,
       lenderName: sql<string>`(SELECT display_name FROM users WHERE id = ${sharedEntries.lenderId})`,
@@ -298,6 +299,7 @@ export async function recordPayment(
     payeeId: string;
     paise: number;
     note?: string;
+    upiRef?: string;
   },
   targetDb: AppDb = db
 ) {
@@ -306,6 +308,11 @@ export async function recordPayment(
   }
   if (creatorId === data.payeeId) {
     throw new Error('Cannot record payment to yourself');
+  }
+
+  // If upiRef is provided, ensure it's exactly 12 digits
+  if (data.upiRef && !/^\d{12}$/.test(data.upiRef)) {
+    throw new Error('UPI reference must be exactly 12 digits');
   }
 
   // Verify active membership of both
@@ -339,6 +346,7 @@ export async function recordPayment(
       kind: 'payment',
       status,
       note: data.note ? data.note.trim().slice(0, 100) : null,
+      upiRef: data.upiRef ? data.upiRef.trim() : null,
       createdBy: creatorId,
     })
     .returning();

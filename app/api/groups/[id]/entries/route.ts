@@ -38,6 +38,7 @@ const entrySchema = z.discriminatedUnion('type', [
     payeeId: z.string(),
     amountRupees: z.number().positive().max(1000000),
     note: z.string().max(100).optional(),
+    upiRef: z.string().regex(/^\d{12}$/, 'UPI reference must be exactly 12 digits').optional().or(z.literal('')),
   }),
 ]);
 
@@ -99,10 +100,12 @@ export async function POST(
 
     if (data.type === 'payment') {
       const paise = Math.round(data.amountRupees * 100);
+      const upiRef = data.upiRef && data.upiRef.trim().length > 0 ? data.upiRef.trim() : undefined;
       const entry = await recordPayment(user.id, params.id, {
         payeeId: data.payeeId,
         paise,
         note: data.note,
+        upiRef,
       });
       return NextResponse.json(entry, { status: 201 });
     }

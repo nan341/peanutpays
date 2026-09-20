@@ -1,4 +1,4 @@
-﻿import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { ensureTablesExist } from '@/lib/db/init';
 import {
   sendConnectionRequest,
@@ -10,8 +10,14 @@ import { requireUser } from '@/lib/auth-helper';
 import { rateLimit } from '@/lib/rate-limit';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const postSchema = z.object({
-  handle: z.string().trim().min(3).max(20),
+  handle: z
+    .string()
+    .trim()
+    .transform((val) => val.replace(/^@+/, ''))
+    .pipe(z.string().min(3).max(20)),
 });
 
 const patchSchema = z.object({
@@ -27,7 +33,11 @@ export async function GET() {
 
     await ensureTablesExist();
     const data = await getConnections(user.id);
-    return NextResponse.json(data);
+    return NextResponse.json(data, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    });
   } catch (err) {
     console.error('[GET /api/connections]', err);
     return NextResponse.json({ error: 'Failed to fetch connections' }, { status: 500 });

@@ -1,4 +1,4 @@
-﻿import { db, AppDb } from '../client';
+import { db, AppDb } from '../client';
 import { connections, groups, groupMembers, users } from '../schema';
 import { eq, and, or, sql } from 'drizzle-orm';
 import { getGroupDetails } from './shared-entries';
@@ -14,7 +14,7 @@ export async function sendConnectionRequest(
     message: 'If this handle exists, a connection request has been sent.',
   };
 
-  const handle = rawHandle.trim().toLowerCase();
+  const handle = rawHandle.trim().replace(/^@+/, '').toLowerCase();
   if (!handle || handle.length < 3 || handle.length > 20) {
     return genericResponse;
   }

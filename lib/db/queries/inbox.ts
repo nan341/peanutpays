@@ -1,4 +1,4 @@
-﻿import { db, AppDb } from '../client';
+import { db, AppDb } from '../client';
 import { connections, groups, groupMembers, sharedEntries, users } from '../schema';
 import { eq, and } from 'drizzle-orm';
 
@@ -45,6 +45,7 @@ export async function getInbox(userId: string, targetDb: AppDb = db) {
       groupId: sharedEntries.groupId,
       paise: sharedEntries.paise,
       note: sharedEntries.note,
+      upiRef: sharedEntries.upiRef,
       createdAt: sharedEntries.createdAt,
       groupName: groups.name,
       payer: {

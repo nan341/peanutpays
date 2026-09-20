@@ -34,3 +34,10 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Troubleshooting
+
+- **Missing Bootstrap Script Error**: If you see `"Error: Invariant: missing bootstrap script. This is a bug in Next.js"`, run `npm run dev:clean` to remove stale build artifacts and start a clean development server.
+- **Concurrent Build / Dev Overlap**: Never run `npm run build` while `npm run dev` is running. Stop the dev server before triggering a production build to avoid corrupting the `.next` compilation cache.
+- **Single Dev Server**: Keep only one dev server instance running at a time to prevent port conflicts and cache lock contention.
+

@@ -7,6 +7,8 @@ export const users = sqliteTable('users', {
   handle: text('handle').notNull().unique(),
   displayName: text('display_name').notNull(),
   passwordHash: text('password_hash').notNull(),
+  upiId: text('upi_id'),
+  upiIdUpdatedAt: text('upi_id_updated_at'),
   createdAt: text('created_at').notNull().default(sql`(current_timestamp)`),
 });
 
@@ -81,6 +83,7 @@ export const sharedEntries = sqliteTable('shared_entries', {
   status: text('status', { enum: ['pending', 'confirmed'] }).notNull(),
   note: text('note'),
   batchId: text('batch_id'),
+  upiRef: text('upi_ref'),
   createdBy: text('created_by').notNull().references(() => users.id),
   createdAt: text('created_at').notNull().default(sql`(current_timestamp)`),
 });

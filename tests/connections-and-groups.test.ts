@@ -60,6 +60,14 @@ describe('Phase 4 & 5: Connections, Direct Ledgers, and Groups', () => {
     expect(res1.message).toBe('If this handle exists, a connection request has been sent.');
   });
 
+  it('normalizes handles with leading @ and whitespace when sending connection requests', async () => {
+    // Send with @ and spaces
+    await sendConnectionRequest(userA.id, '  @userb  ', memDb as any);
+    const connsB = await getConnections(userB.id, memDb as any);
+    expect(connsB.incoming.length).toBe(1);
+    expect(connsB.incoming[0].requester.handle).toBe('usera');
+  });
+
   it('accepting a connection creates a direct group between two users', async () => {
     await sendConnectionRequest(userA.id, 'userb', memDb as any);
     const connsB = await getConnections(userB.id, memDb as any);
@@ -165,8 +173,8 @@ describe('Phase 4 & 5: Connections, Direct Ledgers, and Groups', () => {
     }, memDb as any);
 
     let details = await getGroupDetails(userA.id, group.id, memDb as any);
-    expect(details?.nets[userA.id]).toBe(100000);
-    expect(details?.nets[userB.id]).toBe(-100000);
+    expect(details!.nets![userA.id]).toBe(100000);
+    expect(details!.nets![userB.id]).toBe(-100000);
 
     // B records a payment of 1000.00 back to A (status pending)
     const payment = await recordPayment(userB.id, group.id, {
@@ -177,18 +185,18 @@ describe('Phase 4 & 5: Connections, Direct Ledgers, and Groups', () => {
 
     // Net balances should NOT change while payment is pending
     details = await getGroupDetails(userA.id, group.id, memDb as any);
-    expect(details?.nets[userA.id]).toBe(100000);
-    expect(details?.nets[userB.id]).toBe(-100000);
-    expect(details?.pendingPayments.length).toBe(1);
+    expect(details!.nets![userA.id]).toBe(100000);
+    expect(details!.nets![userB.id]).toBe(-100000);
+    expect(details!.pendingPayments!.length).toBe(1);
 
     // A confirms payment
     await confirmOrRejectPayment(userA.id, payment.id, 'confirm', memDb as any);
 
     // Net balances now updated to 0
     details = await getGroupDetails(userA.id, group.id, memDb as any);
-    expect(details?.nets[userA.id]).toBe(0);
-    expect(details?.nets[userB.id]).toBe(0);
-    expect(details?.pendingPayments.length).toBe(0);
+    expect(details!.nets![userA.id]).toBe(0);
+    expect(details!.nets![userB.id]).toBe(0);
+    expect(details!.pendingPayments!.length).toBe(0);
   });
 
   it('leaving a group with a nonzero balance is blocked', async () => {
@@ -245,8 +253,8 @@ describe('Phase 4 & 5: Connections, Direct Ledgers, and Groups', () => {
     // Group ledger remains intact
     const groupDetails = await getGroupDetails(userB.id, group.id, memDb as any);
     expect(groupDetails).not.toBeNull();
-    expect(groupDetails?.entries.length).toBe(1);
-    expect(groupDetails?.nets[userB.id]).toBe(-30000);
+    expect(groupDetails!.entries!.length).toBe(1);
+    expect(groupDetails!.nets![userB.id]).toBe(-30000);
   });
 
   it('creates custom receipt itemized splits with uneven per-member amounts in group or direct ledger', async () => {
