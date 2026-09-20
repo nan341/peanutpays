@@ -225,6 +225,72 @@ export async function createSharedExpenseSplit(
   return { batchId, entries: insertedEntries };
 }
 
+export async function createSharedCustomSplit(
+  creatorId: string,
+  groupId: string,
+  data: {
+    shares: { userId: string; paise: number }[];
+    note?: string;
+  },
+  targetDb: AppDb = db
+) {
+  if (!data.shares || data.shares.length === 0) {
+    throw new Error('At least one share required');
+  }
+
+  const [group] = await targetDb.select().from(groups).where(eq(groups.id, groupId));
+  if (!group) {
+    throw new Error('Group not found');
+  }
+
+  const activeMembers = await targetDb
+    .select({ userId: groupMembers.userId })
+    .from(groupMembers)
+    .where(and(eq(groupMembers.groupId, groupId), eq(groupMembers.status, 'active')));
+
+  const activeSet = new Set(activeMembers.map((m) => m.userId));
+  if (!activeSet.has(creatorId)) {
+    throw new Error('You must be an active member to record an expense');
+  }
+
+  for (const s of data.shares) {
+    if (!activeSet.has(s.userId)) {
+      throw new Error(`User ${s.userId} is not an active member of this group`);
+    }
+    if (s.paise < 0 || !Number.isInteger(s.paise)) {
+      throw new Error('Share amount must be a non-negative integer');
+    }
+  }
+
+  const batchId = crypto.randomUUID();
+  const note = data.note ? data.note.trim().slice(0, 100) : null;
+  const insertedEntries = [];
+
+  for (const share of data.shares) {
+    if (share.userId === creatorId) continue;
+    if (share.paise > 0) {
+      const [entry] = await targetDb
+        .insert(sharedEntries)
+        .values({
+          id: crypto.randomUUID(),
+          groupId,
+          lenderId: creatorId,
+          borrowerId: share.userId,
+          paise: share.paise,
+          kind: 'loan',
+          status: 'confirmed',
+          note,
+          batchId,
+          createdBy: creatorId,
+        })
+        .returning();
+      insertedEntries.push(entry);
+    }
+  }
+
+  return { batchId, entries: insertedEntries };
+}
+
 export async function recordPayment(
   creatorId: string,
   groupId: string,

@@ -3,6 +3,7 @@ import { ensureTablesExist } from '@/lib/db/init';
 import {
   createSharedLoan,
   createSharedExpenseSplit,
+  createSharedCustomSplit,
   recordPayment,
 } from '@/lib/db/queries/shared-entries';
 import { requireUser } from '@/lib/auth-helper';
@@ -20,6 +21,16 @@ const entrySchema = z.discriminatedUnion('type', [
     type: z.literal('split'),
     totalRupees: z.number().positive().max(1000000),
     participantIds: z.array(z.string()).min(1),
+    note: z.string().max(100).optional(),
+  }),
+  z.object({
+    type: z.literal('custom_split'),
+    shares: z.array(
+      z.object({
+        userId: z.string(),
+        amountRupees: z.number().nonnegative().max(1000000),
+      })
+    ).min(1),
     note: z.string().max(100).optional(),
   }),
   z.object({
@@ -69,6 +80,18 @@ export async function POST(
       const result = await createSharedExpenseSplit(user.id, params.id, {
         totalPaise,
         participantIds: data.participantIds,
+        note: data.note,
+      });
+      return NextResponse.json(result, { status: 201 });
+    }
+
+    if (data.type === 'custom_split') {
+      const shares = data.shares.map((s) => ({
+        userId: s.userId,
+        paise: Math.round(s.amountRupees * 100),
+      }));
+      const result = await createSharedCustomSplit(user.id, params.id, {
+        shares,
         note: data.note,
       });
       return NextResponse.json(result, { status: 201 });

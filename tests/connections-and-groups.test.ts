@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import * as schema from '../lib/db/schema';
@@ -18,6 +18,7 @@ import {
   getGroupDetails,
   createSharedLoan,
   createSharedExpenseSplit,
+  createSharedCustomSplit,
   recordPayment,
   confirmOrRejectPayment,
 } from '../lib/db/queries/shared-entries';
@@ -246,5 +247,43 @@ describe('Phase 4 & 5: Connections, Direct Ledgers, and Groups', () => {
     expect(groupDetails).not.toBeNull();
     expect(groupDetails?.entries.length).toBe(1);
     expect(groupDetails?.nets[userB.id]).toBe(-30000);
+  });
+
+  it('creates custom receipt itemized splits with uneven per-member amounts in group or direct ledger', async () => {
+    await sendConnectionRequest(userA.id, 'userb', memDb as any);
+    const connsB = await getConnections(userB.id, memDb as any);
+    await respondToConnectionRequest(userB.id, connsB.incoming[0].id, 'accept', memDb as any);
+
+    await sendConnectionRequest(userA.id, 'userc', memDb as any);
+    const connsC = await getConnections(userC.id, memDb as any);
+    await respondToConnectionRequest(userC.id, connsC.incoming[0].id, 'accept', memDb as any);
+
+    const group = await createGroup(userA.id, 'Dinner Trip', memDb as any);
+    await inviteMembersToGroup(userA.id, group.id, [userB.id, userC.id], memDb as any);
+    await respondToGroupInvite(userB.id, group.id, 'accept', memDb as any);
+    await respondToGroupInvite(userC.id, group.id, 'accept', memDb as any);
+
+    // User A paid total ₹700: A's share = ₹200, B's share = ₹350, C's share = ₹150
+    const customSplit = await createSharedCustomSplit(
+      userA.id,
+      group.id,
+      {
+        shares: [
+          { userId: userA.id, paise: 20000 },
+          { userId: userB.id, paise: 35000 },
+          { userId: userC.id, paise: 15000 },
+        ],
+        note: 'Dinner Receipt OCR Split',
+      },
+      memDb as any
+    );
+
+    expect(customSplit.batchId).toBeDefined();
+    expect(customSplit.entries.length).toBe(2); // Loans created for B and C (A is lender)
+
+    const details = await getGroupDetails(userA.id, group.id, memDb as any);
+    expect(details?.nets[userA.id]).toBe(50000); // A is owed ₹500
+    expect(details?.nets[userB.id]).toBe(-35000); // B owes ₹350
+    expect(details?.nets[userC.id]).toBe(-15000); // C owes ₹150
   });
 });

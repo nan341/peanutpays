@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -8,6 +8,7 @@ import { useTranslation } from '@/lib/i18n/useTranslation';
 import ExpenseModal from '@/components/shared-ledger/ExpenseModal';
 import LoanModal from '@/components/shared-ledger/LoanModal';
 import InviteModal from '@/components/shared-ledger/InviteModal';
+import ReceiptSplitModal from '@/components/shared-ledger/ReceiptSplitModal';
 import {
   ArrowLeft,
   PlusCircle,
@@ -21,6 +22,7 @@ import {
   AlertCircle,
   ArrowUpRight,
   ArrowDownLeft,
+  Receipt,
 } from 'lucide-react';
 
 interface Member {
@@ -101,7 +103,7 @@ export default function SharedLedgerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeModal, setActiveModal] = useState<'expense' | 'loan' | 'invite' | null>(null);
+  const [activeModal, setActiveModal] = useState<'expense' | 'loan' | 'invite' | 'receipt' | null>(null);
   const [copied, setCopied] = useState(false);
   const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>({});
   const [payingTo, setPayingTo] = useState<string | null>(null);
@@ -323,6 +325,14 @@ export default function SharedLedgerPage() {
             )}
 
             <button
+              onClick={() => setActiveModal('receipt')}
+              className="flex items-center gap-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-medium px-3.5 py-2 rounded-md transition-colors"
+            >
+              <Receipt size={15} />
+              <span>{t('shared.splitFromReceipt')}</span>
+            </button>
+
+            <button
               onClick={() => setActiveModal('loan')}
               className="flex items-center gap-1.5 bg-[#0f2044] hover:bg-blue-900 text-white text-xs font-medium px-3.5 py-2 rounded-md transition-colors"
             >
@@ -371,6 +381,19 @@ export default function SharedLedgerPage() {
 
       {activeModal === 'expense' && (
         <ExpenseModal
+          groupId={id}
+          currentUserId={currentUserId || ''}
+          activeMembers={activeMembers}
+          onClose={() => setActiveModal(null)}
+          onSuccess={() => {
+            setActiveModal(null);
+            fetchGroup();
+          }}
+        />
+      )}
+
+      {activeModal === 'receipt' && (
+        <ReceiptSplitModal
           groupId={id}
           currentUserId={currentUserId || ''}
           activeMembers={activeMembers}
