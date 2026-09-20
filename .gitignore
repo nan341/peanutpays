@@ -27,16 +27,12 @@ yarn-error.log*
 
 # local env files
 .env
+.env.local
 .env*.local
 
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts
-
-# local database and backups
+# local data and databases
+data/
+data
 *.db
 *.db-*
 *.db.bak
@@ -46,8 +42,24 @@ budgetmitra.db-wal
 budgetmitra.db-shm
 budgetmitra.db.bak
 
+# next.js
+.next
+.next/
+/.next/
+node_modules
+node_modules/
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
 # drizzle migrations output
 /drizzle
 
 *.zip
+
+
 
