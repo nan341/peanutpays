@@ -8,6 +8,8 @@ import { useTranslation } from '@/lib/i18n/useTranslation';
 import ExpenseModal from '@/components/shared-ledger/ExpenseModal';
 import LoanModal from '@/components/shared-ledger/LoanModal';
 import InviteModal from '@/components/shared-ledger/InviteModal';
+import ReceiptSplitModal from '@/components/shared-ledger/ReceiptSplitModal';
+import UpiPaySheet from '@/components/UpiPaySheet';
 import {
   ArrowLeft,
   PlusCircle,
@@ -21,6 +23,8 @@ import {
   AlertCircle,
   ArrowUpRight,
   ArrowDownLeft,
+  QrCode,
+  Receipt,
 } from 'lucide-react';
 
 interface Member {
@@ -109,7 +113,13 @@ export default function SharedLedgerPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [activeModal, setActiveModal] = useState<'expense' | 'loan' | 'invite' | null>(null);
+  const [activeModal, setActiveModal] = useState<'expense' | 'loan' | 'invite' | 'receipt' | null>(null);
+  const [upiModal, setUpiModal] = useState<{
+    mode: 'pay' | 'collect';
+    otherMemberId: string;
+    otherMemberName: string;
+    suggestedPaise: number;
+  } | null>(null);
   const [copied, setCopied] = useState(false);
   const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>({});
   const [payingTo, setPayingTo] = useState<string | null>(null);
@@ -173,7 +183,7 @@ export default function SharedLedgerPage() {
         body: JSON.stringify({ action }),
       });
       fetchGroup();
-    } catch { }
+    } catch {}
   };
 
   const handleDeleteEntry = async (entryId: string) => {
@@ -183,7 +193,7 @@ export default function SharedLedgerPage() {
         method: 'DELETE',
       });
       fetchGroup();
-    } catch { }
+    } catch {}
   };
 
   const handleLeaveGroup = async () => {
@@ -335,7 +345,7 @@ export default function SharedLedgerPage() {
               className="flex items-center gap-1.5 bg-teal-700 hover:bg-teal-800 text-white text-xs font-medium px-3.5 py-2 rounded-md transition-colors"
             >
               <Receipt size={15} />
-              <span>{t('shared.splitFromReceipt')}</span>
+              <span>{t('receipt.splitFromReceipt')}</span>
             </button>
 
             <button
@@ -365,10 +375,11 @@ export default function SharedLedgerPage() {
               {data.members?.map((m) => (
                 <span
                   key={m.userId}
-                  className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md border ${m.status === 'invited'
+                  className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-md border ${
+                    m.status === 'invited'
                       ? 'bg-yellow-50 border-yellow-200 text-yellow-800'
                       : 'bg-gray-50 border-gray-200 text-gray-700'
-                    }`}
+                  }`}
                 >
                   <span className="font-medium">{m.displayName}</span>
                   {m.role === 'admin' && (
@@ -384,11 +395,12 @@ export default function SharedLedgerPage() {
         )}
       </div>
 
-      {activeModal === 'expense' && (
-        <ExpenseModal
+      {activeModal === 'receipt' && (
+        <ReceiptSplitModal
           groupId={id}
           currentUserId={currentUserId || ''}
           activeMembers={activeMembers}
+          isDirect={isDirect}
           onClose={() => setActiveModal(null)}
           onSuccess={() => {
             setActiveModal(null);
@@ -397,8 +409,8 @@ export default function SharedLedgerPage() {
         />
       )}
 
-      {activeModal === 'receipt' && (
-        <ReceiptSplitModal
+      {activeModal === 'expense' && (
+        <ExpenseModal
           groupId={id}
           currentUserId={currentUserId || ''}
           activeMembers={activeMembers}
@@ -618,10 +630,11 @@ export default function SharedLedgerPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span
-                        className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${isPayment
+                        className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${
+                          isPayment
                             ? 'bg-blue-100 text-blue-900'
                             : 'bg-emerald-100 text-emerald-900'
-                          }`}
+                        }`}
                       >
                         {isPayment ? 'Payment' : 'Expense / Loan'}
                       </span>

@@ -6,13 +6,16 @@
     "dev": "next dev -H 0.0.0.0",
     "dev:clean": "node -e \"fs.rmSync('.next', { recursive: true, force: true })\" && npm run dev",
     "build": "next build",
+    "prebuild": "node scripts/copy-tesseract-assets.mjs",
     "start": "next start",
     "lint": "next lint",
     "test": "vitest run",
-    "db:migrate": "tsx scripts/migrate.ts"
+    "db:migrate": "tsx scripts/migrate.ts",
+    "postinstall": "node scripts/copy-tesseract-assets.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",
+    "@tesseract.js-data/eng": "^1.0.0",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.47.0",
@@ -28,6 +31,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
+    "@types/pngjs": "^6.0.5",
     "@types/qrcode": "^1.5.6",
     "@types/react": "^18",
     "@types/react-dom": "^18",

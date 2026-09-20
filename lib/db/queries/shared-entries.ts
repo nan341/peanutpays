@@ -226,24 +226,33 @@ export async function createSharedExpenseSplit(
   return { batchId, entries: insertedEntries };
 }
 
-export async function createSharedCustomSplit(
+export async function createSharedItemizedSplit(
   creatorId: string,
   groupId: string,
   data: {
-    shares: { userId: string; paise: number }[];
-    note?: string;
+    payerId?: string;
+    totalPaise: number;
+    splits: { borrowerId: string; paise: number; note?: string }[];
+    description?: string;
   },
   targetDb: AppDb = db
 ) {
-  if (!data.shares || data.shares.length === 0) {
-    throw new Error('At least one share required');
+  const payerId = data.payerId || creatorId;
+
+  if (data.totalPaise <= 0 || !Number.isInteger(data.totalPaise)) {
+    throw new Error('Invalid total in paise');
+  }
+  if (!data.splits || data.splits.length === 0) {
+    throw new Error('At least one borrower split is required');
   }
 
+  // Check group exists
   const [group] = await targetDb.select().from(groups).where(eq(groups.id, groupId));
   if (!group) {
     throw new Error('Group not found');
   }
 
+  // Verify all participants are active members of this group
   const activeMembers = await targetDb
     .select({ userId: groupMembers.userId })
     .from(groupMembers)
@@ -253,44 +262,55 @@ export async function createSharedCustomSplit(
   if (!activeSet.has(creatorId)) {
     throw new Error('You must be an active member to record an expense');
   }
+  if (!activeSet.has(payerId)) {
+    throw new Error('Payer must be an active member of this group');
+  }
 
-  for (const s of data.shares) {
-    if (!activeSet.has(s.userId)) {
-      throw new Error(`User ${s.userId} is not an active member of this group`);
+  let borrowerSum = 0;
+  for (const split of data.splits) {
+    if (!activeSet.has(split.borrowerId)) {
+      throw new Error(`Borrower ${split.borrowerId} is not an active member of this group`);
     }
-    if (s.paise < 0 || !Number.isInteger(s.paise)) {
-      throw new Error('Share amount must be a non-negative integer');
+    if (split.borrowerId === payerId) {
+      throw new Error('Borrower cannot be the payer');
     }
+    if (split.paise <= 0 || !Number.isInteger(split.paise)) {
+      throw new Error('Each borrower amount must be a positive integer in paise');
+    }
+    borrowerSum += split.paise;
+  }
+
+  if (borrowerSum > data.totalPaise) {
+    throw new Error('Sum of borrower shares cannot exceed total amount');
   }
 
   const batchId = crypto.randomUUID();
-  const note = data.note ? data.note.trim().slice(0, 100) : null;
+  const defaultNote = data.description ? data.description.trim().slice(0, 100) : null;
   const insertedEntries = [];
 
-  for (const share of data.shares) {
-    if (share.userId === creatorId) continue;
-    if (share.paise > 0) {
-      const [entry] = await targetDb
-        .insert(sharedEntries)
-        .values({
-          id: crypto.randomUUID(),
-          groupId,
-          lenderId: creatorId,
-          borrowerId: share.userId,
-          paise: share.paise,
-          kind: 'loan',
-          status: 'confirmed',
-          note,
-          batchId,
-          createdBy: creatorId,
-        })
-        .returning();
-      insertedEntries.push(entry);
-    }
+  for (const split of data.splits) {
+    const entryNote = split.note ? split.note.trim().slice(0, 100) : defaultNote;
+    const [entry] = await targetDb
+      .insert(sharedEntries)
+      .values({
+        id: crypto.randomUUID(),
+        groupId,
+        lenderId: payerId,
+        borrowerId: split.borrowerId,
+        paise: split.paise,
+        kind: 'loan',
+        status: 'confirmed',
+        note: entryNote,
+        batchId,
+        createdBy: creatorId,
+      })
+      .returning();
+    insertedEntries.push(entry);
   }
 
   return { batchId, entries: insertedEntries };
 }
+
 
 export async function recordPayment(
   creatorId: string,

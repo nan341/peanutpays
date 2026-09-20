@@ -40,6 +40,19 @@ const entrySchema = z.discriminatedUnion('type', [
     note: z.string().max(100).optional(),
     upiRef: z.string().regex(/^\d{12}$/, 'UPI reference must be exactly 12 digits').optional().or(z.literal('')),
   }),
+  z.object({
+    type: z.literal('itemized_split'),
+    payerId: z.string().optional(),
+    totalPaise: z.number().int().positive().max(100000000),
+    splits: z.array(
+      z.object({
+        borrowerId: z.string(),
+        paise: z.number().int().positive().max(100000000),
+        note: z.string().max(200).optional(),
+      })
+    ).min(1),
+    description: z.string().max(100).optional(),
+  }),
 ]);
 
 export async function POST(
@@ -108,6 +121,17 @@ export async function POST(
         upiRef,
       });
       return NextResponse.json(entry, { status: 201 });
+    }
+
+    if (data.type === 'itemized_split') {
+      const { createSharedItemizedSplit } = await import('@/lib/db/queries/shared-entries');
+      const result = await createSharedItemizedSplit(user.id, params.id, {
+        payerId: data.payerId,
+        totalPaise: data.totalPaise,
+        splits: data.splits,
+        description: data.description,
+      });
+      return NextResponse.json(result, { status: 201 });
     }
 
     return NextResponse.json({ error: 'Invalid entry type' }, { status: 400 });
