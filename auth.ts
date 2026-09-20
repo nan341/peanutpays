@@ -25,13 +25,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         const email = String(credentials.email).trim().toLowerCase();
         const password = String(credentials.password);
 
+        await ensureTablesExist();
+
         const rl = await rateLimit(`login:${email}`, 5, 60);
         if (!rl.success) {
           console.warn(`[AUTH] Rate limit triggered for email: ${email}`);
           return null;
         }
-
-        await ensureTablesExist();
 
         const res = await rawClient.execute({
           sql: 'SELECT id, email, password_hash, display_name FROM users WHERE lower(email) = ?',

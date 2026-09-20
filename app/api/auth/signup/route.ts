@@ -42,13 +42,13 @@ export async function POST(req: NextRequest) {
 
     const { email, handle, displayName, password } = parsed.data;
 
+    await ensureTablesExist();
+
     // Rate limit signup attempts
     const rl = await rateLimit(`signup:${email}`, 5, 60);
     if (!rl.success) {
       return NextResponse.json({ error: 'Too many signup attempts. Please try again later.' }, { status: 429 });
     }
-
-    await ensureTablesExist();
 
     // Check if email or handle already exists
     const existing = await rawClient.execute({

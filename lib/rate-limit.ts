@@ -1,5 +1,6 @@
-﻿import { db, AppDb } from './db/client';
+import { db, AppDb } from './db/client';
 import { sql } from 'drizzle-orm';
+import { ensureTablesExist } from './db/init';
 
 export interface RateLimitResult {
   success: boolean;
@@ -14,6 +15,7 @@ export async function rateLimit(
   windowSeconds: number,
   targetDb: AppDb = db
 ): Promise<RateLimitResult> {
+  await ensureTablesExist(targetDb);
   const now = Math.floor(Date.now() / 1000);
   const windowStart = now - (now % windowSeconds);
   const resetIn = windowStart + windowSeconds - now;
