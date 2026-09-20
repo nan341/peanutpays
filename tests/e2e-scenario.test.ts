@@ -1,4 +1,4 @@
-﻿import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { createClient } from '@libsql/client';
 import { drizzle } from 'drizzle-orm/libsql';
 import * as schema from '../lib/db/schema';
@@ -79,9 +79,9 @@ describe('End-to-End Multi-User Scenario Verification', () => {
 
     // Verify Nets
     let details = await getGroupDetails(userA.id, group.id, memDb as any);
-    expect(details?.nets[userA.id]).toBe(6666);
-    expect(details?.nets[userB.id]).toBe(-3333);
-    expect(details?.nets[userC.id]).toBe(-3333);
+    expect(details!.nets![userA.id]).toBe(6666);
+    expect(details!.nets![userB.id]).toBe(-3333);
+    expect(details!.nets![userC.id]).toBe(-3333);
 
     // 4. Bob records payment to Alice of ₹33.33 (3333 paise) -> pending
     const paymentB = await recordPayment(userB.id, group.id, {
@@ -92,14 +92,14 @@ describe('End-to-End Multi-User Scenario Verification', () => {
 
     // Nets remain unchanged while pending
     details = await getGroupDetails(userB.id, group.id, memDb as any);
-    expect(details?.nets[userB.id]).toBe(-3333);
+    expect(details!.nets![userB.id]).toBe(-3333);
 
     // Alice confirms payment
     await confirmOrRejectPayment(userA.id, paymentB.id, 'confirm', memDb as any);
 
     // Now Bob has net balance 0 and can leave
     details = await getGroupDetails(userB.id, group.id, memDb as any);
-    expect(details?.nets[userB.id]).toBe(0);
+    expect(details!.nets![userB.id]).toBe(0);
 
     const leaveRes = await leaveGroup(userB.id, group.id, memDb as any);
     expect(leaveRes.success).toBe(true);
@@ -112,8 +112,8 @@ describe('End-to-End Multi-User Scenario Verification', () => {
     await confirmOrRejectPayment(userA.id, paymentC.id, 'confirm', memDb as any);
 
     details = await getGroupDetails(userA.id, group.id, memDb as any);
-    expect(details?.nets[userA.id]).toBe(0);
-    expect(details?.nets[userC.id]).toBe(0);
-    expect(details?.plan?.length).toBe(0);
+    expect(details!.nets![userA.id]).toBe(0);
+    expect(details!.nets![userC.id]).toBe(0);
+    expect(details!.plan?.length).toBe(0);
   });
 });

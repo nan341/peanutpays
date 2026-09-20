@@ -1,4 +1,4 @@
-﻿import fs from 'fs';
+import fs from 'fs';
 import path from 'path';
 import { db, rawClient } from '../lib/db/client';
 import { ensureSchema } from '../lib/db/init';
@@ -47,6 +47,30 @@ async function migrate() {
       } else {
         console.log(`Column user_id already exists on ${table}.`);
       }
+    }
+  }
+
+  // Check users table for upi_id and upi_id_updated_at
+  if (await tableExists('users')) {
+    const info = await rawClient.execute(`PRAGMA table_info(users)`);
+    const cols = (info.rows as unknown as ColumnInfo[]).map((c) => c.name);
+    if (!cols.includes('upi_id')) {
+      console.log('Adding column upi_id to users...');
+      await rawClient.execute(`ALTER TABLE users ADD COLUMN upi_id TEXT`);
+    }
+    if (!cols.includes('upi_id_updated_at')) {
+      console.log('Adding column upi_id_updated_at to users...');
+      await rawClient.execute(`ALTER TABLE users ADD COLUMN upi_id_updated_at TEXT`);
+    }
+  }
+
+  // Check shared_entries table for upi_ref
+  if (await tableExists('shared_entries')) {
+    const info = await rawClient.execute(`PRAGMA table_info(shared_entries)`);
+    const cols = (info.rows as unknown as ColumnInfo[]).map((c) => c.name);
+    if (!cols.includes('upi_ref')) {
+      console.log('Adding column upi_ref to shared_entries...');
+      await rawClient.execute(`ALTER TABLE shared_entries ADD COLUMN upi_ref TEXT`);
     }
   }
 

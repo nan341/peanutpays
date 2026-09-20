@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next';
+import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Terms and Conditions - BudgetMitra',
@@ -29,7 +29,7 @@ export default function TermsPage() {
         </Section>
 
         <Section number="4" title="Shared debts and settlements">
-          The shared debt tracker and settlement plans are record-keeping aids for informal peer-to-peer tracking. BudgetMitra is not a payment gateway, bank, or party to any loan, does not enforce repayments, and is not responsible for disputes between users.
+          The shared debt tracker and settlement plans are record-keeping aids for informal peer-to-peer tracking. BudgetMitra is not a payment gateway, bank, or party to any loan, does not enforce repayments, and is not responsible for disputes between users. If you add a UPI ID, it is shown only to a friend or group member who owes you money in a shared ledger, when they choose to pay you. BudgetMitra does not process payments or hold money. Payments happen in your UPI app, and the person receiving the money confirms them here.
         </Section>
 
         <Section number="5" title="Limitation of liability">

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
@@ -29,19 +29,42 @@ export default function GroupsTab() {
 
   const [groups, setGroups] = useState<GroupItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState<string | null>(null);
 
   const fetchGroups = useCallback(async () => {
+    setLoading(true);
+    setFetchError(null);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     try {
-      const res = await fetch('/api/groups');
-      if (res.ok) {
-        const data = await res.json();
-        setGroups(data || []);
+      const res = await fetch('/api/groups', { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (res.status === 401) {
+        window.location.href = '/login';
+        return;
       }
+
+      if (!res.ok) {
+        setFetchError(t('groups.error'));
+        return;
+      }
+
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        setGroups(data);
+      } else {
+        setGroups([]);
+      }
+    } catch {
+      setFetchError(t('groups.error'));
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchGroups();
@@ -97,6 +120,20 @@ export default function GroupsTab() {
         {[1, 2, 3].map((i) => (
           <div key={i} className="h-16 bg-gray-100 rounded-md animate-pulse" />
         ))}
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-md text-sm text-[#f4614d] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <span>{fetchError}</span>
+        <button
+          onClick={fetchGroups}
+          className="px-3.5 py-1.5 bg-[#0f2044] hover:bg-[#1a365d] text-white text-xs font-medium rounded transition-colors shrink-0"
+        >
+          {t('lending.tryAgain')}
+        </button>
       </div>
     );
   }

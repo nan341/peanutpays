@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { useTranslation } from '@/lib/i18n/useTranslation';
-import { UserPlus, Check, X, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { UserPlus, Check, X, ArrowUpRight, ArrowDownLeft, QrCode } from 'lucide-react';
+import UpiPaySheet from '@/components/UpiPaySheet';
 
 interface ConnectionItem {
   id: string;
@@ -48,20 +49,52 @@ export default function FriendsTab() {
   const [incoming, setIncoming] = useState<IncomingItem[]>([]);
   const [outgoing, setOutgoing] = useState<OutgoingItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [upiModal, setUpiModal] = useState<{
+    mode: 'pay' | 'collect';
+    groupId: string;
+    otherMemberId: string;
+    otherMemberName: string;
+    suggestedPaise: number;
+  } | null>(null);
 
   const fetchConnections = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+
     try {
-      const res = await fetch('/api/connections');
-      if (res.ok) {
-        const data = await res.json();
-        setAccepted(data.accepted || []);
-        setIncoming(data.incoming || []);
-        setOutgoing(data.outgoing || []);
+      const res = await fetch('/api/connections', { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      if (res.status === 401) {
+        window.location.href = '/login';
+        return;
       }
+
+      if (!res.ok) {
+        setError(t('friends.error'));
+        return;
+      }
+
+      const data = await res.json();
+      if (data && typeof data === 'object') {
+        setAccepted(Array.isArray(data.accepted) ? data.accepted : []);
+        setIncoming(Array.isArray(data.incoming) ? data.incoming : []);
+        setOutgoing(Array.isArray(data.outgoing) ? data.outgoing : []);
+      } else {
+        setAccepted([]);
+        setIncoming([]);
+        setOutgoing([]);
+      }
+    } catch {
+      setError(t('friends.error'));
     } finally {
+      clearTimeout(timeoutId);
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     fetchConnections();
@@ -77,7 +110,7 @@ export default function FriendsTab() {
       const res = await fetch('/api/connections', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ handle: handle.trim().toLowerCase() }),
+        body: JSON.stringify({ handle: handle.trim().replace(/^@+/, '').toLowerCase() }),
       });
       const data = await res.json();
       setFeedback(data.message || 'If this handle exists, a connection request has been sent.');
@@ -122,6 +155,20 @@ export default function FriendsTab() {
         {[1, 2, 3].map((i) => (
           <div key={i} className="h-16 bg-gray-100 rounded-md animate-pulse" />
         ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-md text-sm text-[#f4614d] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <span>{error}</span>
+        <button
+          onClick={fetchConnections}
+          className="px-3.5 py-1.5 bg-[#0f2044] hover:bg-[#1a365d] text-white text-xs font-medium rounded transition-colors shrink-0"
+        >
+          {t('lending.tryAgain')}
+        </button>
       </div>
     );
   }
@@ -256,7 +303,7 @@ export default function FriendsTab() {
                     <p className="text-xs text-gray-500">@{conn.otherUser.handle}</p>
                   </div>
 
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
                     <div className="text-right">
                       {conn.netBalancePaise > 0 ? (
                         <p className="text-xs font-semibold text-teal-700 flex items-center gap-1 justify-end">
@@ -273,10 +320,46 @@ export default function FriendsTab() {
                       )}
                     </div>
 
+                    {conn.directGroupId && conn.netBalancePaise < 0 && (
+                      <button
+                        onClick={() =>
+                          setUpiModal({
+                            mode: 'pay',
+                            groupId: conn.directGroupId!,
+                            otherMemberId: conn.otherUser.id,
+                            otherMemberName: conn.otherUser.displayName,
+                            suggestedPaise: Math.abs(conn.netBalancePaise),
+                          })
+                        }
+                        className="flex items-center gap-1 text-xs font-semibold bg-[#0f2044] hover:bg-blue-900 text-white px-2.5 py-1.5 rounded-md transition-colors"
+                      >
+                        <QrCode size={13} className="text-teal-400" />
+                        <span>{t('upi.payBtn')}</span>
+                      </button>
+                    )}
+
+                    {conn.directGroupId && conn.netBalancePaise > 0 && (
+                      <button
+                        onClick={() =>
+                          setUpiModal({
+                            mode: 'collect',
+                            groupId: conn.directGroupId!,
+                            otherMemberId: conn.otherUser.id,
+                            otherMemberName: conn.otherUser.displayName,
+                            suggestedPaise: Math.abs(conn.netBalancePaise),
+                          })
+                        }
+                        className="flex items-center gap-1 text-xs font-semibold bg-white hover:bg-gray-100 text-[#0f2044] border border-gray-300 px-2.5 py-1.5 rounded-md transition-colors"
+                      >
+                        <QrCode size={13} className="text-teal-700" />
+                        <span>{t('upi.collectBtn')}</span>
+                      </button>
+                    )}
+
                     {conn.directGroupId && (
                       <Link
                         href={`/lending/shared/${conn.directGroupId}`}
-                        className="text-xs font-medium bg-[#0f2044] hover:bg-blue-900 text-white px-3 py-1.5 rounded-md transition-colors"
+                        className="text-xs font-medium bg-gray-100 hover:bg-gray-200 text-gray-700 px-2.5 py-1.5 rounded-md transition-colors"
                       >
                         {t('friends.openLedger')}
                       </Link>
@@ -288,6 +371,22 @@ export default function FriendsTab() {
           </div>
         )}
       </div>
+
+      {/* UPI Pay / Collect Modal */}
+      {upiModal && (
+        <UpiPaySheet
+          mode={upiModal.mode}
+          groupId={upiModal.groupId}
+          otherMemberId={upiModal.otherMemberId}
+          otherMemberName={upiModal.otherMemberName}
+          suggestedPaise={upiModal.suggestedPaise}
+          onClose={() => setUpiModal(null)}
+          onSuccess={() => {
+            setUpiModal(null);
+            fetchConnections();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { createGroup, getUserGroups } from '@/lib/db/queries/groups';
 import { requireUser } from '@/lib/auth-helper';
 import { z } from 'zod';
 
+export const dynamic = 'force-dynamic';
+
 const createGroupSchema = z.object({
   name: z.string().trim().min(1).max(40),
 });
@@ -16,7 +18,11 @@ export async function GET() {
 
     await ensureTablesExist();
     const groups = await getUserGroups(user.id);
-    return NextResponse.json(groups);
+    return NextResponse.json(groups, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    });
   } catch (err) {
     console.error('[GET /api/groups]', err);
     return NextResponse.json({ error: 'Failed to fetch groups' }, { status: 500 });

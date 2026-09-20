@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -8,6 +8,7 @@ import { useTranslation } from '@/lib/i18n/useTranslation';
 import ExpenseModal from '@/components/shared-ledger/ExpenseModal';
 import LoanModal from '@/components/shared-ledger/LoanModal';
 import InviteModal from '@/components/shared-ledger/InviteModal';
+import UpiPaySheet from '@/components/UpiPaySheet';
 import {
   ArrowLeft,
   PlusCircle,
@@ -21,6 +22,7 @@ import {
   AlertCircle,
   ArrowUpRight,
   ArrowDownLeft,
+  QrCode,
 } from 'lucide-react';
 
 interface Member {
@@ -42,6 +44,7 @@ interface Entry {
   status: 'pending' | 'confirmed';
   note: string | null;
   batchId: string | null;
+  upiRef: string | null;
   createdBy: string;
   createdAt: string;
   lenderName: string;
@@ -70,8 +73,11 @@ interface GroupDetails {
     createdAt: string;
   };
   myMembership: {
+    groupId: string;
+    userId: string;
     role: 'admin' | 'member';
     status: 'invited' | 'active';
+    joinedAt: string;
   };
   members?: Member[];
   entries?: Entry[];
@@ -79,6 +85,11 @@ interface GroupDetails {
   nets?: Record<string, number>;
   pairwise?: PairwiseItem[];
   plan?: SettlePlanItem[];
+  inviter?: {
+    id: string;
+    displayName: string;
+    handle: string;
+  };
 }
 
 function formatINR(paise: number): string {
@@ -90,18 +101,23 @@ function formatINR(paise: number): string {
 }
 
 export default function SharedLedgerPage() {
-  const params = useParams();
-  const id = params?.id as string;
+  const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { t } = useTranslation();
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
-  const { t } = useTranslation();
 
   const [data, setData] = useState<GroupDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const [activeModal, setActiveModal] = useState<'expense' | 'loan' | 'invite' | null>(null);
+  const [upiModal, setUpiModal] = useState<{
+    mode: 'pay' | 'collect';
+    otherMemberId: string;
+    otherMemberName: string;
+    suggestedPaise: number;
+  } | null>(null);
   const [copied, setCopied] = useState(false);
   const [paymentAmounts, setPaymentAmounts] = useState<Record<string, string>>({});
   const [payingTo, setPayingTo] = useState<string | null>(null);
@@ -444,29 +460,65 @@ export default function SharedLedgerPage() {
                     <span className="text-sm font-bold text-teal-800">{formatINR(item.paise)}</span>
                   </div>
 
-                  {isDebtor && (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min="0.01"
-                        step="0.01"
-                        max={(item.paise / 100).toFixed(2)}
-                        placeholder={(item.paise / 100).toFixed(2)}
-                        value={paymentAmounts[item.to] ?? ''}
-                        onChange={(e) =>
-                          setPaymentAmounts({ ...paymentAmounts, [item.to]: e.target.value })
-                        }
-                        className="w-24 border border-gray-300 bg-white rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-teal-600"
-                      />
+                  <div className="flex flex-wrap items-center gap-2">
+                    {isDebtor && (
+                      <>
+                        <button
+                          onClick={() =>
+                            setUpiModal({
+                              mode: 'pay',
+                              otherMemberId: item.to,
+                              otherMemberName: toName,
+                              suggestedPaise: item.paise,
+                            })
+                          }
+                          className="flex items-center gap-1 bg-[#0f2044] hover:bg-blue-900 text-white text-xs font-semibold px-3 py-1 rounded-md transition-colors"
+                        >
+                          <QrCode size={13} className="text-teal-400" />
+                          <span>{t('upi.payBtn')}</span>
+                        </button>
+
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="number"
+                            min="0.01"
+                            step="0.01"
+                            max={(item.paise / 100).toFixed(2)}
+                            placeholder={(item.paise / 100).toFixed(2)}
+                            value={paymentAmounts[item.to] ?? ''}
+                            onChange={(e) =>
+                              setPaymentAmounts({ ...paymentAmounts, [item.to]: e.target.value })
+                            }
+                            className="w-20 border border-gray-300 bg-white rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-teal-600"
+                          />
+                          <button
+                            onClick={() => handleRecordPayment(item.to, item.paise)}
+                            disabled={payingTo === item.to}
+                            className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-semibold px-2.5 py-1 rounded-md transition-colors"
+                          >
+                            {payingTo === item.to ? t('shared.paying') : t('shared.markPaid')}
+                          </button>
+                        </div>
+                      </>
+                    )}
+
+                    {item.to === currentUserId && (
                       <button
-                        onClick={() => handleRecordPayment(item.to, item.paise)}
-                        disabled={payingTo === item.to}
-                        className="bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1 rounded-md transition-colors"
+                        onClick={() =>
+                          setUpiModal({
+                            mode: 'collect',
+                            otherMemberId: item.from,
+                            otherMemberName: fromName,
+                            suggestedPaise: item.paise,
+                          })
+                        }
+                        className="flex items-center gap-1 bg-white hover:bg-gray-100 text-[#0f2044] border border-gray-300 text-xs font-semibold px-3 py-1 rounded-md transition-colors"
                       >
-                        {payingTo === item.to ? t('shared.paying') : t('shared.markPaid')}
+                        <QrCode size={13} className="text-teal-700" />
+                        <span>{t('upi.collectBtn')}</span>
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -496,6 +548,11 @@ export default function SharedLedgerPage() {
                     <p className="font-semibold text-[#0f2044]">
                       {payerName} recorded payment of {formatINR(p.paise)} to {payeeName}
                     </p>
+                    {p.upiRef && (
+                      <p className="font-mono text-[11px] font-semibold text-blue-900 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded inline-block mt-1">
+                        UPI Ref: {p.upiRef}
+                      </p>
+                    )}
                     {isPayer && (
                       <p className="text-gray-500 italic mt-0.5">
                         {t('shared.pendingApprovalNotice', { name: payeeName })}
@@ -590,6 +647,22 @@ export default function SharedLedgerPage() {
           </ul>
         )}
       </div>
+
+      {/* UPI Pay / Collect Modal */}
+      {upiModal && (
+        <UpiPaySheet
+          mode={upiModal.mode}
+          groupId={id}
+          otherMemberId={upiModal.otherMemberId}
+          otherMemberName={upiModal.otherMemberName}
+          suggestedPaise={upiModal.suggestedPaise}
+          onClose={() => setUpiModal(null)}
+          onSuccess={() => {
+            setUpiModal(null);
+            fetchGroup();
+          }}
+        />
+      )}
     </div>
   );
 }

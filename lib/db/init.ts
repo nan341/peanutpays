@@ -10,6 +10,8 @@ export async function ensureSchema(targetDb: AppDb = db) {
       handle TEXT NOT NULL UNIQUE,
       display_name TEXT NOT NULL,
       password_hash TEXT NOT NULL,
+      upi_id TEXT,
+      upi_id_updated_at TEXT,
       created_at TEXT NOT NULL DEFAULT (current_timestamp)
     )
   `);
@@ -115,6 +117,7 @@ export async function ensureSchema(targetDb: AppDb = db) {
       status TEXT NOT NULL CHECK(status IN ('pending', 'confirmed')),
       note TEXT,
       batch_id TEXT,
+      upi_ref TEXT,
       created_by TEXT NOT NULL REFERENCES users(id),
       created_at TEXT NOT NULL DEFAULT (current_timestamp),
       CHECK(lender_id <> borrower_id)
@@ -136,6 +139,65 @@ export async function ensureSchema(targetDb: AppDb = db) {
   `);
   await targetDb.run(sql`CREATE INDEX IF NOT EXISTS idx_budget_limits_user ON budget_limits(user_id)`);
   await targetDb.run(sql`CREATE INDEX IF NOT EXISTS idx_budget_limits_user_cat ON budget_limits(user_id, category)`);
+
+  // Auto-migrate columns for existing tables if created in earlier versions
+  await autoMigrateColumns(targetDb);
+}
+
+export async function checkSchemaDrift(targetDb: AppDb = db) {
+  const expectedSchema: Record<string, string[]> = {
+    users: ['id', 'email', 'handle', 'display_name', 'password_hash', 'upi_id', 'upi_id_updated_at', 'created_at'],
+    rate_limits: ['key', 'window_start', 'count'],
+    transactions: ['id', 'user_id', 'amount', 'description', 'category', 'type', 'date'],
+    friends: ['id', 'user_id', 'name'],
+    lending_entries: ['id', 'user_id', 'friend_id', 'amount', 'direction', 'note', 'date', 'settled'],
+    connections: ['id', 'requester_id', 'addressee_id', 'status', 'created_at'],
+    groups: ['id', 'name', 'type', 'created_by', 'created_at'],
+    group_members: ['group_id', 'user_id', 'role', 'status', 'joined_at'],
+    shared_entries: ['id', 'group_id', 'lender_id', 'borrower_id', 'paise', 'kind', 'status', 'note', 'batch_id', 'upi_ref', 'created_by', 'created_at'],
+    budget_limits: ['id', 'user_id', 'category', 'monthly_limit', 'updated_at'],
+  };
+
+  try {
+    for (const [table, cols] of Object.entries(expectedSchema)) {
+      const info = await targetDb.all<{ name: string }>(sql.raw(`PRAGMA table_info(${table})`));
+      if (!info || info.length === 0) {
+        console.warn(`[SCHEMA DRIFT WARNING] Missing table "${table}". Please run npm run db:migrate.`);
+        continue;
+      }
+      const existingCols = new Set(info.map((c) => c.name));
+      for (const col of cols) {
+        if (!existingCols.has(col)) {
+          console.warn(`[SCHEMA DRIFT WARNING] Missing column "${col}" on table "${table}". Please run npm run db:migrate.`);
+        }
+      }
+    }
+  } catch {
+    // Ignore in read-only / test contexts
+  }
+}
+
+async function autoMigrateColumns(targetDb: AppDb) {
+  const migrations: Array<{ table: string; column: string; def: string }> = [
+    { table: 'users', column: 'upi_id', def: 'TEXT' },
+    { table: 'users', column: 'upi_id_updated_at', def: 'TEXT' },
+    { table: 'shared_entries', column: 'upi_ref', def: 'TEXT' },
+    { table: 'transactions', column: 'user_id', def: 'TEXT REFERENCES users(id)' },
+    { table: 'friends', column: 'user_id', def: 'TEXT REFERENCES users(id)' },
+    { table: 'lending_entries', column: 'user_id', def: 'TEXT REFERENCES users(id)' },
+  ];
+
+  for (const m of migrations) {
+    try {
+      const info = await targetDb.all<{ name: string }>(sql.raw(`PRAGMA table_info(${m.table})`));
+      const colExists = info.some((c) => c.name === m.column);
+      if (!colExists) {
+        await targetDb.run(sql.raw(`ALTER TABLE ${m.table} ADD COLUMN ${m.column} ${m.def}`));
+      }
+    } catch {
+      // Table might not exist or error handled
+    }
+  }
 }
 
 let initialized = false;
@@ -144,6 +206,9 @@ export async function ensureTablesExist(targetDb: AppDb = db) {
   if (initialized && targetDb === db) return;
   await ensureSchema(targetDb);
   if (targetDb === db) {
+    await checkSchemaDrift(targetDb);
     initialized = true;
   }
 }
+
+

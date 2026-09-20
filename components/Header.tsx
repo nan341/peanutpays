@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
@@ -74,11 +74,18 @@ export default function Header() {
           <div className="flex items-center gap-2">
             {isLoggedIn && session?.user ? (
               <div className="flex items-center gap-2">
-                <span className="hidden md:inline text-xs text-blue-200 font-medium px-2 py-1 bg-blue-950/60 rounded border border-blue-800/60">
+                <Link
+                  href="/profile"
+                  className="text-xs text-blue-200 hover:text-white font-medium px-2 py-1 bg-blue-950/60 hover:bg-blue-900/60 rounded border border-blue-800/60 transition-colors"
+                  title={t('profile.title')}
+                >
                   {session.user.name || session.user.email}
-                </span>
+                </Link>
                 <button
-                  onClick={() => signOut({ callbackUrl: '/login' })}
+                  onClick={async () => {
+                    await signOut({ redirect: false });
+                    window.location.href = '/login';
+                  }}
                   className="flex items-center gap-1 text-xs font-medium text-blue-200 hover:text-white bg-blue-900/60 hover:bg-blue-800 border border-blue-700/80 px-2.5 py-1.5 rounded-md transition-colors"
                   title={t('auth.logout')}
                 >
